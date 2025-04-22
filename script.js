@@ -261,6 +261,7 @@ function updateCart() {
   document.querySelector('.cart-buttons button:nth-child(2)').disabled = cart.length === 0;
 }
 
+// Замініть цю функцію:
 async function submitOrder(event) {
   event.preventDefault();
   
@@ -300,6 +301,7 @@ async function submitOrder(event) {
     });
 
     if (response.ok) {
+      // Змінено з showOrderSuccess на showSuccessMessage
       showSuccessMessage(name, total);
       cart = [];
       updateCart();
@@ -315,6 +317,7 @@ async function submitOrder(event) {
   }
 }
 
+// І цю функцію залиште без змін:
 function showSuccessMessage(name, total) {
   document.getElementById('success-message').innerHTML = `
     <p>Дякуємо, ${name}!</p>
