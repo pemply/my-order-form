@@ -147,21 +147,15 @@ const products = [
 let cart = [];
 let selectedCategory = 'Всі';
 
-// Initialize the application
 function init() {
   displayProducts();
   loadCartFromLocalStorage();
   setupEventListeners();
 }
 
-// Set up event listeners
 function setupEventListeners() {
-  // Close modals when clicking outside
-  document.getElementById('overlay').addEventListener('click', () => {
-    closeAllModals();
-  });
+  document.getElementById('overlay').addEventListener('click', closeAllModals);
   
-  // Phone number validation
   const phoneInput = document.getElementById('phone');
   if (phoneInput) {
     phoneInput.addEventListener('input', function() {
@@ -175,31 +169,29 @@ function setupEventListeners() {
     });
   }
   
-  // Escape key closes modals
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      closeAllModals();
-    }
+    if (e.key === 'Escape') closeAllModals();
   });
 }
 
 function closeAllModals() {
   document.getElementById('cart-modal').classList.remove('active');
-  setTimeout(() => {
-    document.getElementById('cart-modal').classList.add('hidden');
-    document.getElementById('overlay').classList.add('hidden');
-  }, 300);
-  
   document.getElementById('checkout-modal').classList.add('hidden');
+  document.getElementById('success-modal').classList.add('hidden');
+  document.getElementById('overlay').classList.add('hidden');
 }
 
-// Display products based on selected category
+function closeSuccessModal() {
+  document.getElementById('success-modal').classList.add('hidden');
+  document.getElementById('overlay').classList.add('hidden');
+}
+
 function displayProducts() {
   const list = document.getElementById('product-list');
   list.innerHTML = '';
 
-  const filtered = selectedCategory === 'Всі'
-    ? products
+  const filtered = selectedCategory === 'Всі' 
+    ? products 
     : products.filter(p => p.category === selectedCategory);
 
   if (filtered.length === 0) {
@@ -207,7 +199,7 @@ function displayProducts() {
     return;
   }
 
-  filtered.forEach((product) => {
+  filtered.forEach(product => {
     const div = document.createElement('div');
     div.className = 'product';
     div.innerHTML = `
@@ -221,18 +213,14 @@ function displayProducts() {
   });
 }
 
-// Filter products by category
 function filterByCategory(category) {
   selectedCategory = category;
   displayProducts();
-  
-  // Highlight selected filter button
   document.querySelectorAll('.filters button').forEach(btn => {
     btn.classList.toggle('active', btn.textContent === category);
   });
 }
 
-// Add product to cart
 function addToCart(productId) {
   const product = products.find(p => p.id === productId);
   if (product) {
@@ -240,98 +228,37 @@ function addToCart(productId) {
     if (existingItem) {
       existingItem.quantity = (existingItem.quantity || 1) + 1;
     } else {
-      product.quantity = 1;
-      cart.push({...product}); // Clone the product to avoid reference issues
+      cart.push({...product, quantity: 1});
     }
     updateCart();
     saveCartToLocalStorage();
-    showCartNotification(product.name);
+    showNotification(`${product.name} додано до кошика!`);
   }
 }
 
-// Show notification when product is added to cart
-function showCartNotification(productName) {
-  const notification = document.createElement('div');
-  notification.className = 'notification';
-  notification.innerHTML = `
-    <span>${productName} додано до кошика!</span>
-  `;
-  document.body.appendChild(notification);
-  
-  setTimeout(() => {
-    notification.classList.add('show');
-  }, 10);
-  
-  setTimeout(() => {
-    notification.classList.remove('show');
-    setTimeout(() => {
-      notification.remove();
-    }, 300);
-  }, 3000);
-}
-
-// Update cart display
 function updateCart() {
   const itemCount = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
   document.getElementById('cart-count').textContent = itemCount;
   
   const list = document.getElementById('cart-items');
-  const total = cart.reduce((sum, p) => sum + (p.price * (p.quantity || 1)), 0);
+  const total = cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
   document.getElementById('total-price').textContent = total.toFixed(2);
-  list.innerHTML = '';
   
-  if (cart.length === 0) {
-    const emptyItem = document.createElement('li');
-    emptyItem.textContent = 'Кошик порожній';
-    list.appendChild(emptyItem);
-    document.querySelector('.cart-buttons button:nth-child(2)').disabled = true;
-  } else {
-    document.querySelector('.cart-buttons button:nth-child(2)').disabled = false;
-    cart.forEach((p, index) => {
-      const li = document.createElement('li');
-      li.innerHTML = `
-        <span>${p.name} – ${p.price} грн × ${p.quantity || 1}</span>
-        <div>
-          <button onclick="changeQuantity(${index}, -1)">-</button>
-          <span>${p.quantity || 1}</span>
-          <button onclick="changeQuantity(${index}, 1)">+</button>
-          <button class="remove" onclick="removeFromCart(${index})">❌</button>
-        </div>
-      `;
-      list.appendChild(li);
-    });
-  }
-}
-
-// Toggle cart visibility
-function toggleCart() {
-  const cartModal = document.getElementById('cart-modal');
-  const overlay = document.getElementById('overlay');
+  list.innerHTML = cart.length === 0 
+    ? '<li>Кошик порожній</li>'
+    : cart.map((item, index) => `
+        <li>
+          <span>${item.name} – ${item.price} грн × ${item.quantity || 1}</span>
+          <div>
+            <button onclick="changeQuantity(${index}, -1)">-</button>
+            <span>${item.quantity || 1}</span>
+            <button onclick="changeQuantity(${index}, 1)">+</button>
+            <button class="remove" onclick="removeFromCart(${index})">❌</button>
+          </div>
+        </li>
+      `).join('');
   
-  if (cartModal.classList.contains('hidden')) {
-    cartModal.classList.remove('hidden');
-    overlay.classList.remove('hidden');
-    setTimeout(() => {
-      cartModal.classList.add('active');
-    }, 10);
-  } else {
-    closeAllModals();
-  }
-}
-
-// Show checkout form
-function checkout() {
-  document.getElementById('cart-modal').classList.remove('active');
-  setTimeout(() => {
-    document.getElementById('cart-modal').classList.add('hidden');
-    document.getElementById('checkout-modal').classList.remove('hidden');
-  }, 300);
-}
-
-// Cancel checkout
-function cancelCheckout() {
-  document.getElementById('checkout-modal').classList.add('hidden');
-  document.getElementById('overlay').classList.add('hidden');
+  document.querySelector('.cart-buttons button:nth-child(2)').disabled = cart.length === 0;
 }
 
 async function submitOrder(event) {
@@ -339,14 +266,15 @@ async function submitOrder(event) {
   
   const form = event.target;
   const formData = new FormData(form);
+  const name = formData.get('Ім\'я');
+  const total = cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
   
-  // Додаємо товари до форми
   const orderItems = cart.map(item => 
     `${item.name} (${item.quantity} шт.) — ${item.price * item.quantity} грн`
   ).join('\n');
   
   formData.append('order', orderItems);
-  formData.append('total', `${cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)} грн`);
+  formData.append('total', `${total} грн`);
 
   try {
     const response = await fetch(form.action, {
@@ -355,69 +283,87 @@ async function submitOrder(event) {
     });
 
     if (response.ok) {
-      showOrderSuccess();  // Показуємо наше вікно
+      showSuccessMessage(name, total);
       cart = [];
       updateCart();
+      saveCartToLocalStorage();
+      form.reset();
       closeAllModals();
     } else {
       throw new Error('Помилка відправки');
     }
   } catch (error) {
-    showAlert('Помилка: ' + error.message, 'error');
+    showNotification(`Помилка: ${error.message}`, 'error');
   }
 }
-// Show alert message
-function showAlert(message, type = 'info') {
-  const alert = document.createElement('div');
-  alert.className = `alert ${type}`;
-  alert.textContent = message;
-  document.body.appendChild(alert);
-  
-  setTimeout(() => {
-    alert.classList.add('show');
-  }, 10);
-  
-  setTimeout(() => {
-    alert.classList.remove('show');
-    setTimeout(() => {
-      alert.remove();
-    }, 300);
-  }, 5000);
+
+function showSuccessMessage(name, total) {
+  document.getElementById('success-message').innerHTML = `
+    <p>Дякуємо, ${name}!</p>
+    <p>Ваше замовлення на суму <strong>${total} грн</strong> прийнято.</p>
+    <p>Ми зв'яжемося з вами для підтвердження.</p>
+  `;
+  document.getElementById('success-modal').classList.remove('hidden');
+  document.getElementById('overlay').classList.remove('hidden');
 }
 
-// Change product quantity in cart
+function showNotification(message, type = 'success') {
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  setTimeout(() => notification.classList.add('show'), 10);
+  setTimeout(() => {
+    notification.classList.remove('show');
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+}
+
+/* Решта функцій залишаються без змін */
+function toggleCart() {
+  const cartModal = document.getElementById('cart-modal');
+  cartModal.classList.toggle('hidden');
+  document.getElementById('overlay').classList.toggle('hidden');
+  setTimeout(() => cartModal.classList.toggle('active'), 10);
+}
+
+function checkout() {
+  document.getElementById('cart-modal').classList.remove('active');
+  setTimeout(() => {
+    document.getElementById('cart-modal').classList.add('hidden');
+    document.getElementById('checkout-modal').classList.remove('hidden');
+  }, 300);
+}
+
+function cancelCheckout() {
+  closeAllModals();
+}
+
 function changeQuantity(index, delta) {
   const item = cart[index];
   item.quantity = (item.quantity || 1) + delta;
-  
-  if (item.quantity < 1) {
-    cart.splice(index, 1);
-  }
-  
+  if (item.quantity < 1) cart.splice(index, 1);
   updateCart();
   saveCartToLocalStorage();
 }
 
-// Remove product from cart
 function removeFromCart(index) {
   cart.splice(index, 1);
   updateCart();
   saveCartToLocalStorage();
 }
 
-// Clear cart
 function clearCart() {
   cart = [];
   updateCart();
   saveCartToLocalStorage();
 }
 
-// Save cart to localStorage
 function saveCartToLocalStorage() {
   localStorage.setItem('fitpower_cart', JSON.stringify(cart));
 }
 
-// Load cart from localStorage
 function loadCartFromLocalStorage() {
   const savedCart = localStorage.getItem('fitpower_cart');
   if (savedCart) {
@@ -425,13 +371,10 @@ function loadCartFromLocalStorage() {
       cart = JSON.parse(savedCart);
       updateCart();
     } catch (e) {
-      console.error('Failed to parse cart data', e);
+      console.error('Помилка завантаження кошика', e);
       localStorage.removeItem('fitpower_cart');
     }
   }
-  
 }
 
-
-// Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', init);
