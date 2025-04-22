@@ -176,6 +176,7 @@ function setupEventListeners() {
 
 function closeAllModals() {
   document.getElementById('cart-modal').classList.remove('active');
+  document.getElementById('cart-modal').classList.add('hidden');
   document.getElementById('checkout-modal').classList.add('hidden');
   document.getElementById('success-modal').classList.add('hidden');
   document.getElementById('overlay').classList.add('hidden');
@@ -261,7 +262,6 @@ function updateCart() {
   document.querySelector('.cart-buttons button:nth-child(2)').disabled = cart.length === 0;
 }
 
-// Замініть цю функцію:
 async function submitOrder(event) {
   event.preventDefault();
   
@@ -282,26 +282,25 @@ async function submitOrder(event) {
 
   try {
     // Відправка даних на FormSubmit
-    const response = await fetch('https://formsubmit.co/ajax/pemply56@gmail.com', {
+    const response = await fetch(form.action, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
       body: JSON.stringify({
-        name: name,
-        address: address,
-        phone: phone,
-        order: orderItems,
-        total: `${total} грн`,
-        _subject: 'Нове замовлення з FitPower!',
-        _template: 'table',
-        _captcha: 'false'
+        "Ім'я": name,
+        "Адреса": address,
+        "Телефон": phone,
+        "Замовлення": orderItems,
+        "Сума": `${total} грн`,
+        "_subject": 'Нове замовлення з FitPower!',
+        "_template": 'table',
+        "_captcha": 'false'
       })
     });
 
     if (response.ok) {
-      // Змінено з showOrderSuccess на showSuccessMessage
       showSuccessMessage(name, total);
       cart = [];
       updateCart();
@@ -317,7 +316,6 @@ async function submitOrder(event) {
   }
 }
 
-// І цю функцію залиште без змін:
 function showSuccessMessage(name, total) {
   const successMessage = document.getElementById('success-message');
   successMessage.innerHTML = `
@@ -328,12 +326,6 @@ function showSuccessMessage(name, total) {
   
   document.getElementById('success-modal').classList.remove('hidden');
   document.getElementById('overlay').classList.remove('hidden');
-  
-  // Центруємо вікно при відкритті
-  const modal = document.getElementById('success-modal');
-  modal.style.top = '50%';
-  modal.style.left = '50%';
-  modal.style.transform = 'translate(-50%, -50%)';
 }
 
 function showNotification(message, type = 'success') {
