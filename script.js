@@ -319,13 +319,21 @@ async function submitOrder(event) {
 
 // І цю функцію залиште без змін:
 function showSuccessMessage(name, total) {
-  document.getElementById('success-message').innerHTML = `
+  const successMessage = document.getElementById('success-message');
+  successMessage.innerHTML = `
     <p>Дякуємо, ${name}!</p>
     <p>Ваше замовлення на суму <strong>${total} грн</strong> прийнято.</p>
     <p>Ми зв'яжемося з вами для підтвердження.</p>
   `;
+  
   document.getElementById('success-modal').classList.remove('hidden');
   document.getElementById('overlay').classList.remove('hidden');
+  
+  // Центруємо вікно при відкритті
+  const modal = document.getElementById('success-modal');
+  modal.style.top = '50%';
+  modal.style.left = '50%';
+  modal.style.transform = 'translate(-50%, -50%)';
 }
 
 function showNotification(message, type = 'success') {
