@@ -265,21 +265,38 @@ async function submitOrder(event) {
   event.preventDefault();
   
   const form = event.target;
-  const formData = new FormData(form);
-  const name = formData.get('Ім\'я');
-  const total = cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
+  const name = document.getElementById('name').value.trim();
+  const address = document.getElementById('address').value.trim();
+  const phone = document.getElementById('phone').value.trim();
   
+  if (!name || !address || !phone) {
+    showNotification('Будь ласка, заповніть всі поля', 'error');
+    return;
+  }
+
+  const total = cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
   const orderItems = cart.map(item => 
     `${item.name} (${item.quantity} шт.) — ${item.price * item.quantity} грн`
   ).join('\n');
-  
-  formData.append('order', orderItems);
-  formData.append('total', `${total} грн`);
 
   try {
-    const response = await fetch(form.action, {
+    // Відправка даних на FormSubmit
+    const response = await fetch('https://formsubmit.co/ajax/pemply56@gmail.com', {
       method: 'POST',
-      body: formData
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        name: name,
+        address: address,
+        phone: phone,
+        order: orderItems,
+        total: `${total} грн`,
+        _subject: 'Нове замовлення з FitPower!',
+        _template: 'table',
+        _captcha: 'false'
+      })
     });
 
     if (response.ok) {
@@ -293,7 +310,8 @@ async function submitOrder(event) {
       throw new Error('Помилка відправки');
     }
   } catch (error) {
-    showNotification(`Помилка: ${error.message}`, 'error');
+    console.error('Помилка:', error);
+    showNotification('Помилка при відправці замовлення. Спробуйте ще раз.', 'error');
   }
 }
 
@@ -320,24 +338,13 @@ function showNotification(message, type = 'success') {
   }, 3000);
 }
 
-
-// Toggle cart visibility
 function toggleCart() {
   const cartModal = document.getElementById('cart-modal');
-  const overlay = document.getElementById('overlay');
-  
-  if (cartModal.classList.contains('hidden')) {
-    cartModal.classList.remove('hidden');
-    overlay.classList.remove('hidden');
-    setTimeout(() => {
-      cartModal.classList.add('active');
-    }, 10);
-  } else {
-    closeAllModals();
-  }
+  cartModal.classList.toggle('hidden');
+  document.getElementById('overlay').classList.toggle('hidden');
+  setTimeout(() => cartModal.classList.toggle('active'), 10);
 }
 
-// Show checkout form
 function checkout() {
   document.getElementById('cart-modal').classList.remove('active');
   setTimeout(() => {
@@ -346,96 +353,34 @@ function checkout() {
   }, 300);
 }
 
-// Cancel checkout
 function cancelCheckout() {
-  document.getElementById('checkout-modal').classList.add('hidden');
-  document.getElementById('overlay').classList.add('hidden');
+  closeAllModals();
 }
 
-async function submitOrder(event) {
-  event.preventDefault();
-  
-  const form = event.target;
-  const formData = new FormData(form);
-  
-  // Додаємо товари до форми
-  const orderItems = cart.map(item => 
-    `${item.name} (${item.quantity} шт.) — ${item.price * item.quantity} грн`
-  ).join('\n');
-  
-  formData.append('order', orderItems);
-  formData.append('total', `${cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)} грн`);
-
-  try {
-    const response = await fetch(form.action, {
-      method: 'POST',
-      body: formData
-    });
-
-    if (response.ok) {
-      showOrderSuccess();  // Показуємо наше вікно
-      cart = [];
-      updateCart();
-      closeAllModals();
-    } else {
-      throw new Error('Помилка відправки');
-    }
-  } catch (error) {
-    showAlert('Помилка: ' + error.message, 'error');
-  }
-}
-// Show alert message
-function showAlert(message, type = 'info') {
-  const alert = document.createElement('div');
-  alert.className = `alert ${type}`;
-  alert.textContent = message;
-  document.body.appendChild(alert);
-  
-  setTimeout(() => {
-    alert.classList.add('show');
-  }, 10);
-  
-  setTimeout(() => {
-    alert.classList.remove('show');
-    setTimeout(() => {
-      alert.remove();
-    }, 300);
-  }, 5000);
-}
-
-// Change product quantity in cart
 function changeQuantity(index, delta) {
   const item = cart[index];
   item.quantity = (item.quantity || 1) + delta;
-  
-  if (item.quantity < 1) {
-    cart.splice(index, 1);
-  }
-  
+  if (item.quantity < 1) cart.splice(index, 1);
   updateCart();
   saveCartToLocalStorage();
 }
 
-// Remove product from cart
 function removeFromCart(index) {
   cart.splice(index, 1);
   updateCart();
   saveCartToLocalStorage();
 }
 
-// Clear cart
 function clearCart() {
   cart = [];
   updateCart();
   saveCartToLocalStorage();
 }
 
-// Save cart to localStorage
 function saveCartToLocalStorage() {
   localStorage.setItem('fitpower_cart', JSON.stringify(cart));
 }
 
-// Load cart from localStorage
 function loadCartFromLocalStorage() {
   const savedCart = localStorage.getItem('fitpower_cart');
   if (savedCart) {
@@ -443,13 +388,10 @@ function loadCartFromLocalStorage() {
       cart = JSON.parse(savedCart);
       updateCart();
     } catch (e) {
-      console.error('Failed to parse cart data', e);
+      console.error('Помилка завантаження кошика', e);
       localStorage.removeItem('fitpower_cart');
     }
   }
-  
 }
 
-
-// Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', init);
