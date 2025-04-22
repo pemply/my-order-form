@@ -347,29 +347,64 @@ async function submitOrder(event) {
     return;
   }
 
-  // Форматуємо замовлення для відправки
+  // Готуємо дані для відправки
   const orderItems = cart.map(item => 
     `${item.name} (${item.quantity} шт.) — ${item.price * item.quantity} грн`
   ).join('\n');
 
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   
-  // Заповнюємо приховане поле з товарами
-  document.getElementById('order-items').value = 
-    `ЗАМОВЛЕННЯ:\n${orderItems}\n\nЗАГАЛЬНА СУМА: ${total} грн`;
-  
-  // Відправляємо форму
-  const form = document.getElementById('checkout-form');
-  form.submit();
-  
-  // Очищаємо кошик
-  cart = [];
-  updateCart();
-  saveCartToLocalStorage();
-  closeAllModals();
-  
-  // Сповіщення про успіх
-  showAlert(`Дякуємо, ${name}! Ваше замовлення на суму ${total} грн відправлено.`, 'success');
+  // Відправляємо через Fetch API
+  try {
+    const response = await fetch('https://formsubmit.co/ajax/pemply56@gmail.com', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        name,
+        address,
+        phone,
+        order: orderItems,
+        total: `${total} грн`,
+        _subject: 'Нове замовлення з FitPower!',
+        _template: 'table'
+      })
+    });
+
+    if (response.ok) {
+      // Показуємо красиве повідомлення
+      showOrderSuccess(name, total);
+      
+      // Очищаємо кошик
+      cart = [];
+      updateCart();
+      saveCartToLocalStorage();
+      closeAllModals();
+    } else {
+      throw new Error('Помилка при відправці');
+    }
+  } catch (error) {
+    showAlert('Сталася помилка. Спробуйте ще раз або зв\'яжіться з нами.', 'error');
+    console.error(error);
+  }
+}
+
+// Функція для красивого повідомлення
+function showOrderSuccess(name, total) {
+  const modal = document.createElement('div');
+  modal.className = 'success-modal';
+  modal.innerHTML = `
+    <div class="success-content">
+      <i class="fas fa-check-circle"></i>
+      <h2>Дякуємо, ${name}!</h2>
+      <p>Ваше замовлення на суму <strong>${total} грн</strong> прийнято.</p>
+      <p>Ми зв'яжемося з вами для підтвердження.</p>
+      <button onclick="this.parentElement.parentElement.remove()">Гаразд</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
 }
 
 // Show alert message
