@@ -334,77 +334,51 @@ function cancelCheckout() {
   document.getElementById('overlay').classList.add('hidden');
 }
 
+// Submit order
 async function submitOrder(event) {
   event.preventDefault();
-  
   const name = document.getElementById('name').value.trim();
   const address = document.getElementById('address').value.trim();
   const phone = document.getElementById('phone').value.trim();
-
-  // Валідація
+  
   if (!name || !address || !phone) {
     showAlert('Будь ласка, заповніть всі поля.', 'error');
     return;
   }
-
-  // Готуємо дані для відправки
-  const orderItems = cart.map(item => 
-    `${item.name} (${item.quantity} шт.) — ${item.price * item.quantity} грн`
-  ).join('\n');
-
-  const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   
-  // Відправляємо через Fetch API
-  try {
-    const response = await fetch('https://formsubmit.co/ajax/pemply56@gmail.com', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        name,
-        address,
-        phone,
-        order: orderItems,
-        total: `${total} грн`,
-        _subject: 'Нове замовлення з FitPower!',
-        _template: 'table'
-      })
-    });
-
-    if (response.ok) {
-      // Показуємо красиве повідомлення
-      showOrderSuccess(name, total);
-      
-      // Очищаємо кошик
-      cart = [];
-      updateCart();
-      saveCartToLocalStorage();
-      closeAllModals();
-    } else {
-      throw new Error('Помилка при відправці');
-    }
-  } catch (error) {
-    showAlert('Сталася помилка. Спробуйте ще раз або зв\'яжіться з нами.', 'error');
-    console.error(error);
+  if (!phone.match(/^\+380\d{9}$/)) {
+    showAlert('Будь ласка, введіть коректний номер телефону у форматі +380XXXXXXXXX', 'error');
+    return;
   }
-}
-
-// Функція для красивого повідомлення
-function showOrderSuccess(name, total) {
-  const modal = document.createElement('div');
-  modal.className = 'success-modal';
-  modal.innerHTML = `
-    <div class="success-content">
-      <i class="fas fa-check-circle"></i>
-      <h2>Дякуємо, ${name}!</h2>
-      <p>Ваше замовлення на суму <strong>${total} грн</strong> прийнято.</p>
-      <p>Ми зв'яжемося з вами для підтвердження.</p>
-      <button onclick="this.parentElement.parentElement.remove()">Гаразд</button>
-    </div>
-  `;
-  document.body.appendChild(modal);
+  
+  // In a real app, you would send this to your backend
+  const orderData = {
+    name,
+    address,
+    phone,
+    items: cart,
+    total: cart.reduce((sum, p) => sum + (p.price * (p.quantity || 1)), 0),
+    date: new Date().toISOString()
+  };
+  
+  // Simulate API call
+  try {
+    // Here you would typically do: await fetch('/api/orders', { method: 'POST', body: JSON.stringify(orderData) });
+    showAlert(`Дякуємо за замовлення, ${name}! Ваше замовлення на суму ${orderData.total} грн прийнято. Ми зателефонуємо вам для підтвердження.`, 'success');
+    
+    // Clear cart and form
+    cart = [];
+    updateCart();
+    saveCartToLocalStorage();
+    document.getElementById('checkout-form').reset();
+    closeAllModals();
+    
+    // In a real app, you might redirect to a thank you page
+    // window.location.href = '/thank-you?order=' + orderData.id;
+  } catch (error) {
+    showAlert('Сталася помилка при оформленні замовлення. Будь ласка, спробуйте ще раз.', 'error');
+    console.error('Order submission error:', error);
+  }
 }
 
 // Show alert message
