@@ -334,53 +334,38 @@ function cancelCheckout() {
   document.getElementById('overlay').classList.add('hidden');
 }
 
-// Submit order
 async function submitOrder(event) {
   event.preventDefault();
-  const name = document.getElementById('name').value.trim();
-  const address = document.getElementById('address').value.trim();
-  const phone = document.getElementById('phone').value.trim();
   
-  if (!name || !address || !phone) {
-    showAlert('Будь ласка, заповніть всі поля.', 'error');
-    return;
-  }
+  const form = event.target;
+  const formData = new FormData(form);
   
-  if (!phone.match(/^\+380\d{9}$/)) {
-    showAlert('Будь ласка, введіть коректний номер телефону у форматі +380XXXXXXXXX', 'error');
-    return;
-  }
+  // Додаємо товари до форми
+  const orderItems = cart.map(item => 
+    `${item.name} (${item.quantity} шт.) — ${item.price * item.quantity} грн`
+  ).join('\n');
   
-  // In a real app, you would send this to your backend
-  const orderData = {
-    name,
-    address,
-    phone,
-    items: cart,
-    total: cart.reduce((sum, p) => sum + (p.price * (p.quantity || 1)), 0),
-    date: new Date().toISOString()
-  };
-  
-  // Simulate API call
+  formData.append('order', orderItems);
+  formData.append('total', `${cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)} грн`);
+
   try {
-    // Here you would typically do: await fetch('/api/orders', { method: 'POST', body: JSON.stringify(orderData) });
-    showAlert(`Дякуємо за замовлення, ${name}! Ваше замовлення на суму ${orderData.total} грн прийнято. Ми зателефонуємо вам для підтвердження.`, 'success');
-    
-    // Clear cart and form
-    cart = [];
-    updateCart();
-    saveCartToLocalStorage();
-    document.getElementById('checkout-form').reset();
-    closeAllModals();
-    
-    // In a real app, you might redirect to a thank you page
-    // window.location.href = '/thank-you?order=' + orderData.id;
+    const response = await fetch(form.action, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (response.ok) {
+      showOrderSuccess();  // Показуємо наше вікно
+      cart = [];
+      updateCart();
+      closeAllModals();
+    } else {
+      throw new Error('Помилка відправки');
+    }
   } catch (error) {
-    showAlert('Сталася помилка при оформленні замовлення. Будь ласка, спробуйте ще раз.', 'error');
-    console.error('Order submission error:', error);
+    showAlert('Помилка: ' + error.message, 'error');
   }
 }
-
 // Show alert message
 function showAlert(message, type = 'info') {
   const alert = document.createElement('div');
